@@ -1,6 +1,4 @@
-import configparser
 import ipaddress
-import os
 import random
 import requests
 from dataclasses import dataclass
@@ -8,17 +6,7 @@ from functools import reduce
 from hashlib import md5
 from pprint import pformat
 
-config_file = 'config.ini'
-config = configparser.ConfigParser(defaults={
-    'url': 'CHANGE TO API ENDPOINT',
-    'email': 'CHANGE TO NTNU STUDENT MAIL',
-    'phone': 'CHANGE TO PHONE NUMBER'
-})
-config.read('config.ini')
-
-if not os.path.exists(config_file):
-    with open(config_file, "w") as f:
-        config.write(f)
+url = 'http://104.248.47.74/dkrest/'
 
 
 @dataclass
@@ -47,7 +35,6 @@ def get(endpoint: str, in_session: bool=True):
     :param in_session: include the session in the request
     :returns: response json as a dict
     """
-    url = config["DEFAULT"]["url"]
     print(f'requesting from {url + endpoint}')
     response = requests.get(url + endpoint, params={'sessionId': session.id} if in_session else {})
     response_json = response.json()
@@ -64,7 +51,6 @@ def post(endpoint: str, json: dict, in_session: bool=True):
     :param in_session: include the session in the request
     :returns: response json as a dict
     """
-    url = config["DEFAULT"]["url"]
     if in_session:
         json['sessionId'] = session.id
 
@@ -74,25 +60,6 @@ def post(endpoint: str, json: dict, in_session: bool=True):
     
     print(f'response: {response}:\n{jsonf(response_json)}')
     return response_json
-
-
-def authorize(email, phone):
-    """ Authorize with email and phone number, and save the session.
-
-    :param email: the email of the user
-    :param phone: the phone number of the user
-    """
-    session_json = post('auth', {
-        'email': email,
-        'phone': phone
-    }, in_session=False)
-
-    if not session_json['success']:
-        return
-    
-    # setup global session
-    session.id = session_json["sessionId"]
-    session.user_id = session_json["userId"]
 
 
 def perform_task1():
@@ -156,7 +123,17 @@ def perform_secret():
 
 def main():
     # authorize user
-    authorize(config["DEFAULT"]["email"], config["DEFAULT"]["phone"])
+    session_json = post('auth', {
+        'email': 'pckvalvi@stud.ntnu.no',
+        'phone': '47903206'
+    }, in_session=False)
+
+    if not session_json['success']:
+        return
+    
+    # setup global session
+    session.id = session_json["sessionId"]
+    session.user_id = session_json["userId"]
 
     # perform all tasks (any output is printed in get and post methods)
     perform_task1()
