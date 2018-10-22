@@ -1,7 +1,6 @@
 import configparser
 import ipaddress
 import os
-import random
 import requests
 from dataclasses import dataclass
 from functools import reduce
@@ -26,6 +25,7 @@ class Session:
     """ Store a running session. """
     id: int = None
     user_id: int = None
+
 
 # the session is stored globally so that it can be used in get and post methods
 session = Session()
@@ -82,17 +82,16 @@ def authorize(email, phone):
     :param email: the email of the user
     :param phone: the phone number of the user
     """
-    session_json = post('auth', {
-        'email': email,
-        'phone': phone
-    }, in_session=False)
+    auth = {'email': email, 'phone': phone}
+    session_json = post('auth', auth, in_session=False)
 
     if not session_json['success']:
-        return
+        return False
     
     # setup global session
     session.id = session_json["sessionId"]
     session.user_id = session_json["userId"]
+    return True
 
 
 def perform_task1():
@@ -137,6 +136,8 @@ def perform_task4():
     for code in range(0, 10000):
         if hash_code(code) == hashed_code:
             break
+    else:
+        code = 0
     
     post('solve', {'pin': code})
 
@@ -156,7 +157,9 @@ def perform_secret():
 
 def main():
     # authorize user
-    authorize(config["DEFAULT"]["email"], config["DEFAULT"]["phone"])
+    success = authorize(config["DEFAULT"]["email"], config["DEFAULT"]["phone"])
+    if not success:
+        return
 
     # perform all tasks (any output is printed in get and post methods)
     perform_task1()
