@@ -4,10 +4,9 @@ import os
 from dataclasses import dataclass
 from functools import reduce
 from hashlib import md5
+from json import loads, dumps
 from pprint import pformat
-
-import requests
-
+from urllib.request import urlopen
 
 config_file = 'config.ini'
 config = configparser.ConfigParser(defaults={
@@ -51,8 +50,13 @@ def get(endpoint: str, in_session: bool=True):
     """
     url = config["DEFAULT"]["url"]
     print(f'requesting from {url + endpoint}')
-    response = requests.get(url + endpoint, params={'sessionId': session.id} if in_session else {})
-    response_json = response.json()
+
+    new_url = url + endpoint
+    if in_session:
+        new_url += f'?sessionId={session.id}'
+
+    response = urlopen(new_url)
+    response_json = loads(response.read())
 
     print(f'response: {response}:\n{jsonf(response_json)}')
     return response_json
@@ -71,8 +75,8 @@ def post(endpoint: str, json: dict, in_session: bool=True):
         json['sessionId'] = session.id
 
     print(f'sending to {url + endpoint}:\n{jsonf(json)}')
-    response = requests.post(url + endpoint, json=json)
-    response_json = response.json()
+    response = urlopen(url + endpoint, data=dumps(json).encode())
+    response_json = loads(response.read())
     
     print(f'response: {response}:\n{jsonf(response_json)}')
     return response_json
